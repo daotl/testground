@@ -519,6 +519,10 @@ func (c *Client) request(ctx context.Context, method string, path string, body i
 		return nil, fmt.Errorf("headers must be tuples: key1, value1, key2, value2")
 	}
 	req, err := http.NewRequest(method, c.endpoint+path, body)
+	if err != nil {
+		return nil, fmt.Errorf("new request error:%v", err)
+	}
+
 	req = req.WithContext(ctx)
 
 	token := strings.TrimSpace(c.cfg.Client.Token)
