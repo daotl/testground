@@ -10,6 +10,9 @@ FROM golang:${GO_VERSION}-buster
 
 COPY /go.mod /go.mod
 
+# Using goproxy
+RUN go env -w GOPROXY=https://goproxy.cn,direct
+
 # Download deps.
 RUN cd / && go mod download
 
