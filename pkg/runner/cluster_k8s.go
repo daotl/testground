@@ -962,10 +962,13 @@ func (c *ClusterK8sRunner) checkClusterResources(ow *rpc.OutputWriter, groups []
 
 	// all worker nodes are the same, so just take allocatable CPU from the first
 	item := res.Items[0].Status.Allocatable["cpu"]
-	nodeCPUs, _ := item.AsInt64()
-
-	totalCPUs := nodes * int(nodeCPUs)
-	availableCPUs := float64(totalCPUs) - float64(nodes)*sidecarCPUs
+	nodeCPUs, err := strconv.ParseFloat(item.AsDec().String(), 64)
+	if err != nil {
+		ow.Warnw("parse allocatable cpu error", "cpu", item.AsDec().String())
+		return false, fmt.Errorf("parse allocatable cpu error")
+	}
+	totalCPUs := float64(nodes) * nodeCPUs
+	availableCPUs := totalCPUs - float64(nodes)*sidecarCPUs
 
 	for _, g := range groups {
 		var podCPU float64
