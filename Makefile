@@ -1,5 +1,6 @@
 GOTFLATS ?=
 SHELL = /bin/bash
+USERNAME = huyc0769
 
 define eachmod
 	@echo '$(1)'
@@ -32,10 +33,10 @@ build-all:
 docker: docker-testground docker-sidecar
 
 docker-sidecar:
-	docker build --build-arg TG_VERSION=`git rev-list -1 HEAD` -t iptestground/sidecar:edge -f Dockerfile.sidecar .
+	docker build --build-arg TG_VERSION=`git rev-list -1 HEAD` -t $(USERNAME)/sidecar:latest -f Dockerfile.sidecar .
 
 docker-testground:
-	docker build --build-arg TG_VERSION=`git rev-list -1 HEAD` -t iptestground/testground:edge -f Dockerfile.testground .
+	docker build --build-arg TG_VERSION=`git rev-list -1 HEAD` -t $(USERNAME)/testground:latest -f Dockerfile.testground .
 
 test-go:
 	testground plan import --from ./plans/placebo
@@ -65,5 +66,9 @@ kind-cluster:
 	kubectl apply -f .circleci/pvc.yaml
 	kubectl label nodes kind-control-plane testground.node.role.plan=true
 	kubectl label nodes kind-control-plane testground.node.role.infra=true
-	kind load docker-image iptestground/sidecar:edge
+	kind load docker-image iptestground/sidecar:latest
 	kubectl apply -f .circleci/sidecar.yaml
+
+push:
+	docker push $(USERNAME)/sidecar:latest
+	docker push $(USERNAME)/testground:latest

@@ -186,9 +186,13 @@ func defaultKubernetesConfig() KubernetesConfig {
 	if _, err := os.Stat(kubeconfig); os.IsNotExist(err) {
 		kubeconfig = ""
 	}
+	ns, ok := os.LookupEnv("TESTPLANS_NAMESPACE")
+	if !ok {
+		ns = "default"
+	}
 	return KubernetesConfig{
 		KubeConfigPath: kubeconfig,
-		Namespace:      "default",
+		Namespace:      ns,
 	}
 }
 
@@ -543,7 +547,7 @@ func (c *ClusterK8sRunner) CollectOutputs(ctx context.Context, input *api.Collec
 		Post().
 		Resource("pods").
 		Name("collect-outputs").
-		Namespace("default").
+		Namespace(c.config.Namespace).
 		SubResource("exec").
 		Param("container", "collect-outputs").
 		VersionedParams(&v1.PodExecOptions{
@@ -1007,7 +1011,7 @@ func (c *ClusterK8sRunner) TerminateAll(_ context.Context, ow *rpc.OutputWriter)
 	planPods := metav1.ListOptions{
 		LabelSelector: "testground.purpose=plan",
 	}
-	err := client.CoreV1().Pods("default").DeleteCollection(&metav1.DeleteOptions{}, planPods)
+	err := client.CoreV1().Pods(c.config.Namespace).DeleteCollection(&metav1.DeleteOptions{}, planPods)
 	if err != nil {
 		ow.Errorw("could not terminate all pods", "err", err)
 		return err
