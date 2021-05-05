@@ -1,6 +1,6 @@
 GOTFLATS ?=
 SHELL = /bin/bash
-USERNAME = huyc0769
+USERNAME = bdwaretest
 
 define eachmod
 	@echo '$(1)'
