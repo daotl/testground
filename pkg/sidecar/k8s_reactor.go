@@ -43,6 +43,7 @@ var (
 type K8sReactor struct {
 	gosync.Mutex
 
+	namespace       string
 	client          sync.Client
 	manager         *docker.Manager
 	allowedServices []AllowedService
@@ -65,7 +66,13 @@ func NewK8sReactor() (Reactor, error) {
 
 	cache, _ := lru.New(32)
 
+	namespace := os.Getenv("TESTPLANS_NAMESPACE")
+	if namespace == "" {
+		namespace = "default"
+	}
+
 	r := &K8sReactor{
+		namespace:   namespace,
 		client:      client,
 		manager:     docker,
 		runidsCache: cache,
@@ -171,7 +178,7 @@ func (d *K8sReactor) manageContainer(ctx context.Context, container *docker.Cont
 	// Resolve allowed services, so that we update network routes
 	d.ResolveServices(params.TestRun)
 
-	err = waitForPodRunningPhase(ctx, podName)
+	err = waitForPodRunningPhase(ctx, podName, d.namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +354,7 @@ func (d *K8sReactor) manageContainer(ctx context.Context, container *docker.Cont
 	return NewInstance(d.client, runenv, info.Config.Hostname, network)
 }
 
-func waitForPodRunningPhase(ctx context.Context, podName string) error {
+func waitForPodRunningPhase(ctx context.Context, podName string, namespace string) error {
 	k8scfg, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
 		return fmt.Errorf("error in wait for pod running phase: %v", err)
@@ -368,7 +375,7 @@ func waitForPodRunningPhase(ctx context.Context, podName string) error {
 			if phase == "Running" {
 				return nil
 			}
-			pod, err := k8sClientset.CoreV1().Pods("default").Get(podName, metav1.GetOptions{})
+			pod, err := k8sClientset.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("error in wait for pod running phase: %v", err)
 			}
